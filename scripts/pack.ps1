@@ -7,7 +7,7 @@ $outputName = "seeddrop-v$version.zip"
 $outputPath = Join-Path $projectRoot $outputName
 
 $excludeDirs = @('node_modules', '.cursor', '.git', 'docs', 'dist')
-$excludeFiles = @('accounts.json', 'interaction-log.jsonl', 'performance-stats.json', 'package-lock.json', '.DS_Store', 'Thumbs.db')
+$excludeFiles = @('accounts.json', 'interaction-log.jsonl', 'performance-stats.json', 'package-lock.json', '.DS_Store', 'Thumbs.db', 'pack.ts', 'pack.ps1', '.gitignore')
 $excludeGlobs = @('feedback-history-*.json', '*.zip')
 
 Write-Host "[pack] Project: $projectRoot"
