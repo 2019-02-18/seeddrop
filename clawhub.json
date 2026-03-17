@@ -1,0 +1,15 @@
+{
+  "name": "seeddrop",
+  "version": "2.0.0",
+  "description": "Community engagement assistant. Monitors social platforms for relevant discussions and generates value-first replies.",
+  "category": "social-media",
+  "tags": ["community", "engagement", "social-listening", "reply-assistant"],
+  "pricing": "free",
+  "license": "MIT-0",
+  "platforms": ["linux", "darwin", "win32"],
+  "requires": {
+    "tools": ["bash", "browser"],
+    "anyBins": ["node", "npx"]
+  },
+  "companion_skills": ["social-vault"]
+}
