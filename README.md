@@ -23,8 +23,8 @@ seeddrop monitor bilibili
 | Platform | Monitor | Reply | Difficulty |
 |----------|---------|-------|------------|
 | B站 | API | API | ★☆☆ |
-| 贴吧 | API | API | ★☆☆ |
-| 知乎 | API | Browser | ★★☆ |
+| 贴吧 | API → Browser fallback | API | ★★☆ |
+| 知乎 | API → Browser fallback | Browser | ★★☆ |
 | 小红书 | API/Browser | Browser | ★★★ |
 
 ## Scripts
@@ -44,3 +44,9 @@ auth-bridge → monitor → scorer → responder → interaction-log
 ```
 
 See `guides/quickstart.md` for details.
+
+## Disclaimer / 免责声明
+
+本工具是社区互动辅助工具，**不是**数据爬虫。使用本工具即表示您同意自行承担所有责任，遵守相关法律法规及各平台服务条款。工具使用您自己的账号凭证操作，不大规模采集或存储第三方数据。开发者不对使用本工具产生的任何后果负责。
+
+详细免责条款请参阅 [SKILL.md](SKILL.md#disclaimer--免责声明)。

@@ -4,10 +4,11 @@ metadata:
   clawdbot:
     description: >
       社区互动助手。监控B站、贴吧、知乎、小红书等平台的相关讨论，
-      生成有价值的回复，自然地提及你的产品或服务。支持审核和自动模式。
+      生成有价值的回复草稿，经人工审核后发送。所有回复需人工确认，
+      凭证必须使用 SocialVault 加密存储。
       Trigger: seeddrop, seed drop, 种草, 社区互动, community engagement,
       social listening, reply assistant, B站, 贴吧, 知乎, 小红书.
-    version: 3.0.0
+    version: 3.0.1
     tags:
       - community
       - engagement
@@ -17,6 +18,10 @@ metadata:
       - tieba
       - zhihu
       - xiaohongshu
+    security:
+      - credential_storage: SocialVault required (encrypted)
+      - reply_mode: approve only (manual review required)
+      - auto_mode: disabled
 ---
 
 # SeedDrop — 社区互动助手
@@ -33,19 +38,22 @@ secondary and must never exceed 20% of the reply content.**
 | Platform | Monitor | Reply | Auth |
 |----------|---------|-------|------|
 | **B站** | API | API | Cookie (SESSDATA + bili_jct) |
-| **贴吧** | API | API | Cookie (BDUSS + STOKEN) |
-| **知乎** | API | Browser | Cookie (z_c0 + d_c0) |
+| **贴吧** | API → Browser fallback | API | Cookie (BDUSS + STOKEN) |
+| **知乎** | API → Browser fallback | Browser | Cookie (z_c0 + d_c0) |
 | **小红书** | API/Browser | Browser | Cookie (a1 + web_session) |
 
-## Recommended Companion
+## Security Requirements
 
-SeedDrop works standalone, but pairing with **SocialVault** improves security:
-- Encrypted credential storage (instead of plaintext)
+**SocialVault is REQUIRED** — SeedDrop does not support plaintext credential storage.
+
+- Encrypted credential storage (AES-256-GCM)
 - Automatic cookie refresh
 - Browser fingerprint consistency
 - Account health monitoring
 
 Install SocialVault: `clawhub install socialvault`
+
+Without SocialVault, SeedDrop will not function.
 
 ## Available Commands
 
@@ -66,9 +74,10 @@ Install SocialVault: `clawhub install socialvault`
 - `seeddrop auth list` — Show all configured accounts
 
 ### Configuration
-- `seeddrop config mode <approve|auto>` — Set reply mode
 - `seeddrop config threshold <0.0-1.0>` — Set scoring threshold
 - `seeddrop blacklist add <user|community|keyword>` — Add to blacklist
+
+**Note:** Only `approve` mode is available. Auto-reply is disabled for security.
 
 ## Execution Pipeline
 
@@ -81,28 +90,57 @@ When triggered (manually or via Cron), execute the following pipeline:
 2. **Monitor**: Run `npx tsx {baseDir}/scripts/monitor.ts <platform> [target]`
    to search for new relevant discussions. Output is JSONL to stdout.
 
+   **Anti-detection fallback**: If monitor returns 0 results for 贴吧 or 知乎 (likely
+   blocked by anti-bot), fall back to browser-based search using the `browser` tool:
+
+   **Browser search procedure** (headless Chromium compatible):
+   1. Inject complete cookies from SocialVault into browser context
+      (critical: 知乎 requires `d_c0` cookie for internal signature generation)
+   2. Navigate to the search URL:
+      - **贴吧**: `https://tieba.baidu.com/f/search/res?qw=<keyword>&rn=20&pn=1`
+        (or `https://tieba.baidu.com/f?kw=<target>` for specific 吧)
+      - **知乎**: `https://www.zhihu.com/search?type=content&q=<keyword>`
+   3. Wait for results to load:
+      - **贴吧**: `.s_post` or `#thread_list` elements
+      - **知乎**: `.SearchResult-Card` elements
+   4. Extract post data from the rendered page (links, titles, excerpts)
+
+   Each adapter exposes a `browserSearch(keyword, target?)` method that returns a
+   `BrowserInstruction` with the exact steps. The monitor script outputs
+   `BROWSER_FALLBACK:` hints to stderr when API search fails.
+
+   **Cookie requirements for browser search**:
+   - 知乎: Must include `z_c0`, `d_c0`, `__zse_ck`, `_xsrf`, `SESSIONID` (see SocialVault guide)
+   - 贴吧: Must include `BDUSS`, `STOKEN` (see SocialVault guide)
+   - Use SocialVault's Network request header method for complete cookie export
+
 3. **Score**: Pipe monitor output to `npx tsx {baseDir}/scripts/scorer.ts [threshold]`
    which evaluates each post on relevance, intent strength, freshness, and risk.
    Only posts scoring above threshold (default 0.6) proceed.
 
 4. **Respond**: For qualifying posts, pipe scored output to
-   `npx tsx {baseDir}/scripts/responder.ts <mode>` to generate reply drafts.
-   - In **approve** mode: present drafts to user for confirmation before sending.
-   - In **auto** mode: send directly, log everything.
+   `npx tsx {baseDir}/scripts/responder.ts` to generate reply drafts.
+   - **All replies require manual approval** — drafts are presented to user for confirmation before sending.
+   - Auto-reply mode is disabled for security.
 
 5. **Log**: All interactions are appended to
    `{baseDir}/memory/interaction-log.jsonl` for deduplication and analytics.
 
-## Safety Rules (Mandatory)
+## Safety & Security Rules (Mandatory)
 
 These rules are **hardcoded in scripts** and cannot be overridden:
 
+### Security
+- **SocialVault required**: No plaintext credential storage
+- **Manual approval only**: Auto-reply is disabled, all replies require user confirmation
+- **Credential isolation**: Credentials are never logged or exposed
+
+### Rate Limiting
 - Per-platform daily reply limits (see `{baseDir}/references/safety-rules.md`)
 - No duplicate replies to the same post
 - Max 1 reply per author within 24 hours
 - Reply intervals randomized between 5–15 minutes
 - No posting in communities that prohibit automated engagement
-- Auto mode has stricter limits than approve mode
 
 Read full safety rules: `{baseDir}/references/safety-rules.md`
 
@@ -129,7 +167,7 @@ Refer to platform-specific templates in `{baseDir}/templates/` for style guides.
 
 | File | Purpose |
 |------|---------|
-| `scripts/auth-bridge.ts` | Credential management with SocialVault fallback |
+| `scripts/auth-bridge.ts` | Credential management (SocialVault required) |
 | `scripts/monitor.ts` | Platform monitoring orchestration |
 | `scripts/scorer.ts` | Multi-dimensional post scoring |
 | `scripts/responder.ts` | Reply generation and delivery |
@@ -141,3 +179,38 @@ Refer to platform-specific templates in `{baseDir}/templates/` for style guides.
 | `templates/reply-*.md` | Platform-specific reply style guides |
 | `references/safety-rules.md` | Rate limits and safety constraints |
 | `references/scoring-criteria.md` | Scoring algorithm documentation |
+
+## Disclaimer / 免责声明
+
+**SeedDrop is a community engagement assistant tool designed to help users
+participate in online discussions more efficiently. It is NOT a data crawler
+or scraper.**
+
+By using this tool, you acknowledge and agree:
+
+1. **User Responsibility**: You are solely responsible for all actions performed
+   using this tool, including compliance with applicable laws and platform Terms
+   of Service.
+2. **Your Own Accounts**: This tool operates using your own authenticated accounts
+   and credentials. You must have legitimate access to any platform you interact with.
+3. **No Data Collection**: SeedDrop does not bulk-collect, store, or redistribute
+   third-party user data. It only stores your own reply history for deduplication.
+4. **Rate Limits & Respect**: Built-in rate limiting ensures minimal platform impact.
+   Users must not modify or bypass these limits.
+5. **No Warranty**: This tool is provided "as-is" without warranty. The developers
+   are not liable for any consequences arising from its use, including but not
+   limited to account suspension, legal action, or data loss.
+6. **Legal Compliance**: Users must comply with all applicable laws and regulations,
+   including but not limited to the Cybersecurity Law, Data Security Law, Personal
+   Information Protection Law, and Anti-Unfair Competition Law of the People's
+   Republic of China, as well as equivalent laws in their jurisdiction.
+7. **Platform TOS**: Users must review and comply with the Terms of Service of each
+   platform they interact with. Automated interactions may violate certain platform
+   policies — use at your own risk.
+
+**本工具仅为社区互动辅助工具，不是数据爬虫。使用本工具即表示您同意：**
+- 所有操作由您本人负责，需自行遵守相关法律法规及平台服务条款
+- 工具使用您自己的账号凭证，您必须拥有合法的平台访问权限
+- 工具不会大规模采集、存储或传播第三方用户数据
+- 请勿修改或绕过内置的频率限制
+- 开发者不对使用本工具产生的任何后果承担责任

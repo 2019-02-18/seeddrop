@@ -167,6 +167,11 @@ async function monitorPlatform(
   for (const keyword of keywords) {
     console.error(`[monitor] Searching ${platformId} for "${keyword}" (range: ${timeRange})${target ? ` in ${target}` : ''}`);
     const posts = await adapter.search(keyword, timeRange, cred, target);
+    if (posts.length === 0 && adapter.browserSearch) {
+      const instruction = adapter.browserSearch(keyword, target);
+      console.error(`[monitor] API search returned 0 results — browser fallback available.`);
+      console.error(`[monitor] BROWSER_FALLBACK: ${JSON.stringify(instruction)}`);
+    }
     allPosts.push(...posts);
   }
 

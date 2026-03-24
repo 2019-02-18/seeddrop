@@ -1,10 +1,11 @@
 // SECURITY MANIFEST:
 //   Environment variables accessed: HOME, USERPROFILE
 //   External endpoints called: none (SocialVault calls delegated to Agent)
-//   Local files read: config/accounts.json, SocialVault SKILL.md (existence check)
+//   Local files read: SocialVault SKILL.md (existence check only)
 //   Local files written: none
+//   Security: SocialVault is REQUIRED - no plaintext credential fallback
 
-import { readFileSync, existsSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -37,54 +38,7 @@ function detectSocialVault(): string | null {
 }
 
 export function getAuthMode(): AuthMode {
-  return detectSocialVault() ? 'socialvault' : 'local';
-}
-
-// ─── Local Fallback ─────────────────────────────────────────
-
-const ACCOUNTS_PATH = join(BASE_DIR, 'config', 'accounts.json');
-
-interface AccountsFile {
-  [platform: string]: {
-    [profile: string]: {
-      authType: Credential['authType'];
-      value: string;
-    };
-  };
-}
-
-function loadAccounts(): AccountsFile {
-  if (!existsSync(ACCOUNTS_PATH)) {
-    console.error(`[auth-bridge] accounts.json not found at ${ACCOUNTS_PATH}`);
-    return {};
-  }
-  try {
-    const raw = readFileSync(ACCOUNTS_PATH, 'utf-8');
-    return JSON.parse(raw) as AccountsFile;
-  } catch (err) {
-    console.error(`[auth-bridge] Failed to parse accounts.json: ${(err as Error).message}`);
-    return {};
-  }
-}
-
-function getLocalCredential(platform: string, profile: string): Credential | null {
-  const accounts = loadAccounts();
-  const platformAccounts = accounts[platform];
-  if (!platformAccounts) {
-    console.error(`[auth-bridge] No accounts configured for platform: ${platform}`);
-    return null;
-  }
-  const account = platformAccounts[profile] ?? platformAccounts['default'];
-  if (!account) {
-    console.error(`[auth-bridge] No account found for profile "${profile}" on ${platform}`);
-    return null;
-  }
-  return {
-    authType: account.authType,
-    value: account.value,
-    profile,
-    source: 'local',
-  };
+  return detectSocialVault() ? 'socialvault' : 'none';
 }
 
 // ─── SocialVault Mode ───────────────────────────────────────
@@ -120,7 +74,8 @@ export function getCredential(platform: string, profile: string = 'default'): Cr
     };
   }
 
-  return getLocalCredential(platform, profile);
+  console.error(`[auth-bridge] SocialVault is required but not detected. Please install: clawhub install socialvault`);
+  return null;
 }
 
 export function checkCredential(platform: string, profile: string = 'default'): CheckResult {
@@ -184,7 +139,7 @@ function main(): void {
         script: 'auth-bridge',
         status: 'ok',
         mode: getAuthMode(),
-        accountsFileExists: existsSync(ACCOUNTS_PATH),
+        socialVaultDetected: detectSocialVault() !== null,
       }));
       break;
 

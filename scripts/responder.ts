@@ -107,13 +107,14 @@ async function main(): Promise<void> {
     return;
   }
 
-  const mode: ReplyMode = (args[0] as ReplyMode) || 'approve';
-  if (mode !== 'approve' && mode !== 'auto') {
-    console.error('Usage: responder.ts <approve|auto>');
+  // SECURITY: Only approve mode is supported - no auto-reply to prevent abuse
+  const mode: ReplyMode = 'approve';
+  if (args[0] === 'auto') {
+    console.error('[responder] SECURITY: Auto mode is disabled. All replies require manual approval.');
     process.exit(1);
   }
 
-  console.error(`[responder] Mode: ${mode}`);
+  console.error(`[responder] Mode: ${mode} (manual approval required)`);
 
   const log = loadInteractionLog();
   const rl = createInterface({ input: process.stdin, terminal: false });

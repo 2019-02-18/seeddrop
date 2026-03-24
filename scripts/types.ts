@@ -65,7 +65,7 @@ export interface CheckResult {
   error?: string;
 }
 
-export type AuthMode = 'socialvault' | 'local';
+export type AuthMode = 'socialvault' | 'none';
 
 // ─── Rate Limiting ──────────────────────────────────────────
 
@@ -111,6 +111,15 @@ export interface PlatformAdapter {
   check(credential: Credential): Promise<CheckResult>;
 
   rateLimitInfo(): RateLimitInfo;
+
+  /**
+   * Returns BrowserInstruction for Agent to execute search via browser tool.
+   * Used as fallback when API search is blocked (403).
+   */
+  browserSearch?(
+    keyword: string,
+    target?: string,
+  ): BrowserInstruction;
 }
 
 // ─── Interaction Log ────────────────────────────────────────
@@ -171,6 +180,72 @@ export interface BrowserInstruction {
   action: 'search' | 'reply' | 'check';
   steps: BrowserStep[];
   cookies?: string;
+}
+
+// ─── Anti-Detection Helpers ──────────────────────────────────
+
+const CHROME_VERSION = '131';
+
+export function buildBrowserHeaders(cookie: string, extra?: Record<string, string>): Record<string, string> {
+  return {
+    'Cookie': cookie,
+    'User-Agent': `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${CHROME_VERSION}.0.0.0 Safari/537.36`,
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Cache-Control': 'max-age=0',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Sec-Ch-Ua': `"Chromium";v="${CHROME_VERSION}", "Not_A Brand";v="24"`,
+    'Sec-Ch-Ua-Mobile': '?0',
+    'Sec-Ch-Ua-Platform': '"Windows"',
+    'Upgrade-Insecure-Requests': '1',
+    ...extra,
+  };
+}
+
+export function buildApiHeaders(cookie: string, extra?: Record<string, string>): Record<string, string> {
+  return {
+    'Cookie': cookie,
+    'User-Agent': `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${CHROME_VERSION}.0.0.0 Safari/537.36`,
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'same-origin',
+    'Sec-Ch-Ua': `"Chromium";v="${CHROME_VERSION}", "Not_A Brand";v="24"`,
+    'Sec-Ch-Ua-Mobile': '?0',
+    'Sec-Ch-Ua-Platform': '"Windows"',
+    ...extra,
+  };
+}
+
+export async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 3,
+): Promise<Response> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      const delay = Math.min(1000 * Math.pow(2, attempt) + Math.random() * 500, 8000);
+      await new Promise(r => setTimeout(r, delay));
+    }
+    try {
+      const response = await fetch(url, options);
+      if (response.status === 403 && attempt < maxRetries - 1) {
+        console.error(`[fetchWithRetry] 403 on attempt ${attempt + 1}, retrying...`);
+        continue;
+      }
+      return response;
+    } catch (err) {
+      lastError = err as Error;
+      console.error(`[fetchWithRetry] Attempt ${attempt + 1} failed: ${lastError.message}`);
+    }
+  }
+  throw lastError ?? new Error('All retry attempts failed');
 }
 
 // ─── Cookie Parsing ─────────────────────────────────────────
