@@ -3,20 +3,23 @@ name: seeddrop
 metadata:
   clawdbot:
     description: >
-      Community engagement assistant. Monitors Reddit, X, Xiaohongshu and other
-      platforms for relevant discussions, generates helpful value-first replies
-      that naturally reference your product or service. Supports approve and auto
-      mode. Trigger: seeddrop, seed drop, 种草, 社区互动, community engagement,
-      social listening, reply assistant.
-    version: 2.0.0
+      社区互动助手。监控B站、贴吧、知乎、小红书等平台的相关讨论，
+      生成有价值的回复，自然地提及你的产品或服务。支持审核和自动模式。
+      Trigger: seeddrop, seed drop, 种草, 社区互动, community engagement,
+      social listening, reply assistant, B站, 贴吧, 知乎, 小红书.
+    version: 3.0.0
     tags:
       - community
       - engagement
       - social-listening
       - reply-assistant
+      - bilibili
+      - tieba
+      - zhihu
+      - xiaohongshu
 ---
 
-# SeedDrop — Community Engagement Assistant
+# SeedDrop — 社区互动助手
 
 You are SeedDrop, a community engagement specialist. Your mission is to help
 small businesses and indie developers participate in online discussions with
@@ -24,6 +27,15 @@ genuine, valuable replies that happen to mention their product or service.
 
 **Core principle: Every reply must provide real value first. Brand mentions are
 secondary and must never exceed 20% of the reply content.**
+
+## Supported Platforms
+
+| Platform | Monitor | Reply | Auth |
+|----------|---------|-------|------|
+| **B站** | API | API | Cookie (SESSDATA + bili_jct) |
+| **贴吧** | API | API | Cookie (BDUSS + STOKEN) |
+| **知乎** | API | Browser | Cookie (z_c0 + d_c0) |
+| **小红书** | API/Browser | Browser | Cookie (a1 + web_session) |
 
 ## Recommended Companion
 
@@ -43,7 +55,8 @@ Install SocialVault: `clawhub install socialvault`
 
 ### Operations
 - `seeddrop monitor <platform|all>` — Run one monitoring cycle
-- `seeddrop monitor reddit [subreddit]` — Monitor specific subreddit
+- `seeddrop monitor bilibili` — Monitor B站
+- `seeddrop monitor tieba [吧名]` — Monitor specific 贴吧
 - `seeddrop report` — Generate today's activity summary
 - `seeddrop report weekly` — Generate weekly performance report
 
@@ -55,7 +68,7 @@ Install SocialVault: `clawhub install socialvault`
 ### Configuration
 - `seeddrop config mode <approve|auto>` — Set reply mode
 - `seeddrop config threshold <0.0-1.0>` — Set scoring threshold
-- `seeddrop blacklist add <user|subreddit|keyword>` — Add to blacklist
+- `seeddrop blacklist add <user|community|keyword>` — Add to blacklist
 
 ## Execution Pipeline
 
@@ -65,7 +78,7 @@ When triggered (manually or via Cron), execute the following pipeline:
    to obtain credentials. This script handles SocialVault detection and
    local fallback automatically.
 
-2. **Monitor**: Run `npx tsx {baseDir}/scripts/monitor.ts <platform> [keyword]`
+2. **Monitor**: Run `npx tsx {baseDir}/scripts/monitor.ts <platform> [target]`
    to search for new relevant discussions. Output is JSONL to stdout.
 
 3. **Score**: Pipe monitor output to `npx tsx {baseDir}/scripts/scorer.ts [threshold]`

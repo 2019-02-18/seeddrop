@@ -19,7 +19,6 @@ final = relevance × 0.35 + intent × 0.30 + freshness × 0.20 + risk × 0.15
 
 - 默认: 0.6
 - Auto 模式最低: 0.7
-- X/Twitter API 模式最低: 0.8
 - 推荐范围: 0.4 - 0.8
 
 ## 相关度评分
@@ -35,9 +34,9 @@ final = relevance × 0.35 + intent × 0.30 + freshness × 0.20 + risk × 0.15
 
 | 类型 | 分数 | 特征词 |
 |------|------|--------|
-| 求助/提问 | 0.9 | how to, recommend, help, 求推荐, 怎么 |
-| 讨论/意见 | 0.7 | what do you think, experience, 讨论 |
-| 吐槽/抱怨 | 0.5 | frustrated, terrible, 坑, 吐槽 |
+| 求助/提问 | 0.9 | 求推荐, 怎么, 请问, 有没有推荐, recommend, help |
+| 讨论/意见 | 0.7 | 讨论, 大家觉得, 有没有人用过, 什么体验 |
+| 吐槽/抱怨 | 0.5 | 坑, 吐槽, 垃圾, 难用, 避雷 |
 | 纯分享 | 0.3 | 无特征词 |
 
 ## 时效评分

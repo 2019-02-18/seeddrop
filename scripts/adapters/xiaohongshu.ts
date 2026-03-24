@@ -1,6 +1,6 @@
 // SECURITY MANIFEST:
 //   Environment variables accessed: none
-//   External endpoints called: none (all via browser mode)
+//   External endpoints called: https://edith.xiaohongshu.com/api/sns/web/v1
 //   Local files read: none
 //   Local files written: none
 
@@ -15,6 +15,17 @@ import type {
 } from '../types.js';
 import { BROWSER_INSTRUCTION_ID } from '../types.js';
 
+const XHS_API = 'https://edith.xiaohongshu.com/api/sns/web/v1';
+
+function buildHeaders(credential: Credential): Record<string, string> {
+  return {
+    'Cookie': credential.value,
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Referer': 'https://www.xiaohongshu.com',
+    'Origin': 'https://www.xiaohongshu.com',
+  };
+}
+
 export class XiaohongshuAdapter implements PlatformAdapter {
   readonly platformId = 'xiaohongshu';
   readonly platformName = '小红书';
@@ -25,6 +36,55 @@ export class XiaohongshuAdapter implements PlatformAdapter {
     credential: Credential,
     _target?: string,
   ): Promise<Post[]> {
+    try {
+      const params = new URLSearchParams({
+        keyword,
+        page: '1',
+        page_size: '20',
+        search_id: '',
+        sort: 'general',
+        note_type: '0',
+      });
+      const response = await fetch(`${XHS_API}/search/notes?${params}`, {
+        headers: buildHeaders(credential),
+      });
+
+      if (response.ok) {
+        const data = await response.json() as {
+          code?: number;
+          success?: boolean;
+          data?: {
+            items?: Array<{
+              id: string;
+              note_card?: {
+                display_title?: string;
+                desc?: string;
+                user?: { nickname?: string };
+                time?: number;
+              };
+            }>;
+          };
+        };
+
+        if (data.success && data.data?.items?.length) {
+          return data.data.items.map(item => ({
+            id: item.id,
+            url: `https://www.xiaohongshu.com/explore/${item.id}`,
+            title: item.note_card?.display_title ?? '',
+            body: item.note_card?.desc ?? '',
+            author: item.note_card?.user?.nickname ?? '',
+            createdAt: item.note_card?.time
+              ? new Date(item.note_card.time * 1000).toISOString()
+              : new Date().toISOString(),
+            platform: this.platformId,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error(`[xiaohongshu] API search failed, falling back to browser: ${(error as Error).message}`);
+    }
+
+    console.error('[xiaohongshu] API search unavailable, returning browser instruction');
     const instruction: BrowserInstruction = {
       mode: 'browser',
       action: 'search',

@@ -7,13 +7,17 @@
 import type { PlatformAdapter } from '../types.js';
 
 const adapterRegistry: Record<string, () => Promise<PlatformAdapter>> = {
-  'reddit': async () => {
-    const { RedditAdapter } = await import('./reddit.js');
-    return new RedditAdapter();
+  'bilibili': async () => {
+    const { BilibiliAdapter } = await import('./bilibili.js');
+    return new BilibiliAdapter();
   },
-  'x-twitter': async () => {
-    const { XTwitterAdapter } = await import('./x-twitter.js');
-    return new XTwitterAdapter();
+  'tieba': async () => {
+    const { TiebaAdapter } = await import('./tieba.js');
+    return new TiebaAdapter();
+  },
+  'zhihu': async () => {
+    const { ZhihuAdapter } = await import('./zhihu.js');
+    return new ZhihuAdapter();
   },
   'xiaohongshu': async () => {
     const { XiaohongshuAdapter } = await import('./xiaohongshu.js');

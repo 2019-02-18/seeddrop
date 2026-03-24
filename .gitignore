@@ -3,6 +3,8 @@ memory/interaction-log.jsonl
 memory/performance-stats.json
 feedback-history-*.json
 .DS_Store
+.cursor
+.qoder
 Thumbs.db
 node_modules/
 seeddrop*

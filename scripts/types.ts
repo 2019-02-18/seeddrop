@@ -23,7 +23,7 @@ export interface Post {
   author: string;
   createdAt: string; // ISO 8601
   platform: string;
-  subreddit?: string;
+  community?: string; // 吧名、知乎话题、B站分区等
   metadata?: Record<string, unknown>;
 }
 
@@ -82,9 +82,9 @@ export interface DailyLimits {
 }
 
 export const PLATFORM_DAILY_LIMITS: Record<string, DailyLimits> = {
-  'reddit':             { approve: 20, auto: 10 },
-  'x-twitter':          { approve: 15, auto: 8  },
-  'x-twitter-api':      { approve: 10, auto: 5  },
+  'bilibili':           { approve: 30, auto: 15 },
+  'tieba':              { approve: 20, auto: 10 },
+  'zhihu':              { approve: 10, auto: 5  },
   'xiaohongshu':        { approve: 10, auto: 5  },
   '_default':           { approve: 10, auto: 5  },
 };
@@ -152,7 +152,6 @@ export const SCORE_WEIGHTS = {
 
 export const DEFAULT_THRESHOLD = 0.6;
 export const AUTO_MODE_MIN_THRESHOLD = 0.7;
-export const X_API_MIN_THRESHOLD = 0.8;
 export const AUTO_MODE_MIN_RISK = 0.5;
 
 // ─── Browser Instruction (for adapter browser mode) ─────────
@@ -172,6 +171,13 @@ export interface BrowserInstruction {
   action: 'search' | 'reply' | 'check';
   steps: BrowserStep[];
   cookies?: string;
+}
+
+// ─── Cookie Parsing ─────────────────────────────────────────
+
+export function parseCookieValue(raw: string, name: string): string | undefined {
+  const match = raw.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+  return match?.[1];
 }
 
 // ─── Utility types ──────────────────────────────────────────

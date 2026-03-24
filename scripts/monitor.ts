@@ -130,7 +130,7 @@ function loadBlacklist(): Blacklist {
 
 function isBlacklisted(post: Post, blacklist: Blacklist): boolean {
   if (blacklist.users.includes(post.author.toLowerCase())) return true;
-  if (post.subreddit && blacklist.communities.includes(post.subreddit.toLowerCase())) return true;
+  if (post.community && blacklist.communities.includes(post.community.toLowerCase())) return true;
 
   const text = `${post.title} ${post.body}`.toLowerCase();
   for (const kw of blacklist.keywords) {
@@ -205,7 +205,7 @@ async function main(): Promise<void> {
   }
 
   const platformArg = args[0];
-  const targetArg = args[1]; // e.g. specific subreddit
+  const targetArg = args[1]; // e.g. specific community (吧名, 分区等)
 
   if (!platformArg) {
     console.error('Usage: monitor.ts <platform|all> [target]');

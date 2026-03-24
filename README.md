@@ -1,14 +1,14 @@
-# SeedDrop v2
+# SeedDrop v3
 
-Community engagement assistant for OpenClaw. Monitors Reddit, X/Twitter, Xiaohongshu for relevant discussions and generates value-first replies.
+社区互动助手 — OpenClaw Skill。监控 B站、贴吧、知乎、小红书的相关讨论，生成有价值的回复。
 
 ## Quick Start
 
 ```bash
 clawhub install seeddrop
 seeddrop setup
-seeddrop auth add reddit
-seeddrop monitor reddit
+seeddrop auth add bilibili
+seeddrop monitor bilibili
 ```
 
 ## Tech Stack
@@ -18,13 +18,14 @@ seeddrop monitor reddit
 - **Dependencies**: tsx, typescript (dev only)
 - **Platform**: Cross-platform (Windows, Linux, macOS)
 
-## Features
+## Supported Platforms
 
-- Multi-platform monitoring (Reddit API, X browser+API, Xiaohongshu browser)
-- 4-dimension scoring: relevance, intent, freshness, risk
-- Approve and Auto reply modes with safety-first limits
-- Optional SocialVault integration for encrypted credentials
-- Extensible platform adapter architecture
+| Platform | Monitor | Reply | Difficulty |
+|----------|---------|-------|------------|
+| B站 | API | API | ★☆☆ |
+| 贴吧 | API | API | ★☆☆ |
+| 知乎 | API | Browser | ★★☆ |
+| 小红书 | API/Browser | Browser | ★★★ |
 
 ## Scripts
 

@@ -75,9 +75,9 @@ function loadBrandProfile(): ParsedBrandProfile {
 // ─── Scoring Functions ──────────────────────────────────────
 
 const INTENT_KEYWORDS = {
-  high: ['how to', 'recommend', 'help', 'looking for', 'any suggestions', '求推荐', '怎么', '有什么好的', '推荐一下'],
-  medium: ['what do you think', 'experience', 'opinion', '讨论', '大家觉得', '有没有人用过'],
-  low: ['frustrated', 'terrible', 'annoying', '坑', '吐槽', '垃圾', '难用'],
+  high: ['求推荐', '怎么', '有什么好的', '推荐一下', '求助', '请问', '有没有推荐', '怎么选', '怎么办', 'how to', 'recommend', 'help', 'looking for'],
+  medium: ['讨论', '大家觉得', '有没有人用过', '有经验', '分享一下', '什么体验', '值不值', 'what do you think', 'experience'],
+  low: ['坑', '吐槽', '垃圾', '难用', '太差了', '后悔', '避雷', 'frustrated', 'terrible'],
 };
 
 function scoreRelevance(post: Post, keywords: string[]): number {
